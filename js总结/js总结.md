@@ -579,7 +579,7 @@ console.log(p instanceof Person); // true（正确的实例关系）
 
 > **`for...in`**用于遍历**对象的可枚举属性**（包括自身属性和继承的原型链属性），不适用于遍历数组（虽然能遍历，但不推荐）。
 >
-> **`for...of`**用于遍历**可迭代对象（iterable）的元素**，包括数组、字符串、`Map`、`Set`、`arguments` 等，不能直接遍历普通对象。
+> **`for...of`**用于遍历**可迭代对象（iterable）的元素**，包括数组、字符串、`Map`、`Set`、`arguments` 等，不能遍历普通对象（会报错）。
 
 2.**循环变量不同**
 
@@ -613,3 +613,592 @@ console.log(p instanceof Person); // true（正确的实例关系）
 
 3.**对原型链的处理不同**
 
+> **`for...in`**会遍历对象**原型链上的可枚举属性**，可能导致意外结果，需要用 `hasOwnProperty()` 过滤。
+>
+> **`for...of`**只遍历对象自身的元素，**不涉及原型链**，无需额外过滤。
+>
+> ```js
+> // 给 Object 原型添加一个属性
+> Object.prototype.foo = "bar";
+> 
+> const obj = { a: 1 };
+> for (const key in obj) {
+>   // 不过滤会遍历到原型链上的 foo
+>   console.log(key); // 输出 "a"、"foo"
+> }
+> 
+> // 正确用法：只遍历自身属性
+> for (const key in obj) {
+>   if (obj.hasOwnProperty(key)) {
+>     console.log(key); // 仅输出 "a"
+>   }
+> ```
+
+### 12.用for...of遍历普通对象
+
+1.`for...of` 循环主要用于遍历**可迭代对象**（如数组、字符串、Map、Set 等），而普通对象（`Object`）默认是**不可迭代的**。
+
+> 若要使用 `for...of` 遍历普通对象，需先将对象转换为可迭代形式（如获取对象的键、值或键值对数组）
+
+2.遍历对象的键（`Object.keys()`）
+
+> `Object.keys(obj)` 返回对象自身所有可枚举属性的**键名数组**，可通过 `for...of` 遍历键名，再通过键名获取对应值。
+>
+> ```js
+> const obj = { name: '张三', age: 20, gender: '男' };
+> 
+> // 遍历键名
+> for (const key of Object.keys(obj)) {
+>   console.log('键：', key, '，值：', obj[key]);
+> }
+> // 输出：
+> // 键： name ，值： 张三
+> // 键： age ，值： 20
+> // 键： gender ，值： 男
+> ```
+
+3.遍历对象的值（`Object.values()`）
+
+> `Object.values(obj)` 返回对象自身所有可枚举属性的**值数组**，可直接遍历值。
+>
+> ```js
+> const obj = { name: '张三', age: 20, gender: '男' };
+> 
+> // 遍历值
+> for (const value of Object.values(obj)) {
+>   console.log('值：', value);
+> }
+> // 输出：
+> // 值： 张三
+> // 值： 20
+> // 值： 男
+> ```
+
+3.遍历对象的键值对（`Object.entries()`）
+
+> `Object.entries(obj)` 返回对象自身所有可枚举属性的**键值对数组**（每个元素是 `[key, value]` 形式的数组），可同时获取键和值。
+>
+> ```js
+> const obj = { name: '张三', age: 20, gender: '男' };
+> 
+> // 遍历键值对
+> for (const [key, value] of Object.entries(obj)) {
+>   console.log(`键：${key}，值：${value}`);
+> }
+> // 输出：
+> // 键：name，值：张三
+> // 键：age，值：20
+> // 键：gender，值：男
+> ```
+
+### 13.对 AJAX 的理解
+
+1.**对 AJAX 的理解**
+
+> AJAX（Asynchronous JavaScript and XML，异步 JavaScript 和 XML）是一种在不重新加载整个页面的情况下，与服务器交换数据并更新部分网页的技术。其核心是**异步通信**，通过浏览器内置的 `XMLHttpRequest` 对象（或现代的 `fetch API`）实现客户端与服务器的后台数据交互，从而提升用户体验。
+
+2.**AJAX 的核心特点**
+
+> **异步性**：请求发送后，浏览器无需等待服务器响应，可继续执行其他操作，响应返回后通过回调处理结果。
+>
+> **局部更新**：只需更新页面的部分内容，无需刷新整个页面。
+>
+> **数据交换**：早期主要使用 XML 格式，现在更多用 JSON（更轻量、易解析）。
+
+3.**实现一个 AJAX 请求**
+
+> `new XMLHttpRequest()`：创建请求对象。
+>
+> `open(method, url, async)`：初始化请求（方法、地址、是否异步）。
+>
+> `setRequestHeader()`：设置请求头（如 `Content-Type`）。
+>
+> `send(data)`：发送请求（GET 时 `data` 为 `null`）。
+>
+> `onreadystatechange`：监听状态变化（`readyState=4` 表示请求完成）。
+>
+> ```js
+> /**
+>  * 封装 AJAX 请求函数
+>  * @param {Object} options - 请求配置
+>  * @param {string} options.url - 请求地址
+>  * @param {string} [options.method='GET'] - 请求方法（GET/POST）
+>  * @param {Object} [options.data=null] - 请求数据
+>  * @param {Function} options.success - 成功回调（接收响应数据）
+>  * @param {Function} options.error - 失败回调（接收错误信息）
+>  */
+> function ajax(options) {
+>   // 默认配置
+>   const {
+>     url,
+>     method = 'GET',
+>     data = null,
+>     success,
+>     error
+>   } = options;
+> 
+>   // 创建 XMLHttpRequest 对象
+>   const xhr = new XMLHttpRequest();
+> 
+>   // 初始化请求（设置方法和地址）
+>   // GET 方法：数据拼接在 URL 后（?key=value&...）
+>   // POST 方法：数据放在请求体中
+>   if (method.toUpperCase() === 'GET' && data) {
+>     // 拼接 URL 参数（将对象转为 key=value 格式）
+>     const params = new URLSearchParams(data).toString();
+>     url += (url.includes('?') ? '&' : '?') + params;
+>   }
+>   xhr.open(method, url, true); // 第三个参数 true 表示异步
+> 
+>   // 设置请求头（POST 需指定内容类型）
+>   if (method.toUpperCase() === 'POST') {
+>     xhr.setRequestHeader('Content-Type', 'application/json'); // JSON 格式
+>     // 若数据是表单格式，可改为：'application/x-www-form-urlencoded'
+>   }
+> 
+>   // 监听请求状态变化
+>   xhr.onreadystatechange = function() {
+>     // readyState = 4 表示请求完成，status = 200 表示成功
+>     if (xhr.readyState === 4) {
+>       if (xhr.status >= 200 && xhr.status < 300) {
+>         // 解析响应数据（假设服务器返回 JSON）
+>         const response = JSON.parse(xhr.responseText);
+>         success && success(response);
+>       } else {
+>         error && error(new Error(`请求失败：${xhr.status}`));
+>       }
+>     }
+>   };
+> 
+>   // 处理网络错误
+>   xhr.onerror = function() {
+>     error && error(new Error('网络错误'));
+>   };
+> 
+>   // 发送请求（POST 数据需转为 JSON 字符串）
+>   const sendData = method.toUpperCase() === 'POST' && data 
+>     ? JSON.stringify(data) 
+>     : null;
+>   xhr.send(sendData);
+> }
+> 
+> 
+> // 示例：使用 AJAX 函数
+> // 1. GET 请求
+> ajax({
+>   url: 'https://api.example.com/user',
+>   method: 'GET',
+>   data: { id: 123 }, // 传递的参数
+>   success: (res) => {
+>     console.log('GET 成功：', res);
+>   },
+>   error: (err) => {
+>     console.error('GET 失败：', err.message);
+>   }
+> });
+> 
+> // 2. POST 请求
+> ajax({
+>   url: 'https://api.example.com/user',
+>   method: 'POST',
+>   data: { name: '张三', age: 20 }, // 提交的数据
+>   success: (res) => {
+>     console.log('POST 成功：', res);
+>   },
+>   error: (err) => {
+>     console.error('POST 失败：', err.message);
+>   }
+> });
+> ```
+
+4.**现代替代方案**
+
+> 实际开发中，更推荐使用 `fetch API` 或 `axios`（基于 Promise，语法更简洁），但 `XMLHttpRequest` 是 AJAX 的基础，理解其原理很重要。
+
+### 14.ajax、axios、fetch的区别
+
+1.**本质与定位不同**
+
+> **`ajax`**：不是具体的 API 或库，而是一种**技术思想**：指通过 `XMLHttpRequest` 对象在不刷新页面的情况下与服务器异步通信，实现局部更新页面的技术。核心是 `XMLHttpRequest`（XHR）对象，是浏览器原生 API。
+>
+> **`axios`**：是一个**基于 Promise 的第三方库**，封装了 `XMLHttpRequest`（浏览器端）和 `http` 模块（Node.js 端），用于简化 AJAX 请求。本质是对原生 XHR 的封装，同时支持更多功能。
+>
+> **`fetch`**：是浏览器**原生的 API**（属于 ES6+ 规范），用于替代 `XMLHttpRequest`，基于 Promise 设计，语法更简洁，是现代浏览器推荐的异步请求方案。
+
+2. **语法与使用方式不同**
+
+> **`ajax`**：需要手动创建 `XMLHttpRequest` 对象，通过事件监听处理回调，语法繁琐，且不支持 Promise。
+>
+> ```js
+> const xhr = new XMLHttpRequest();
+> xhr.open('GET', 'https://api.example.com/data', true);
+> xhr.onreadystatechange = function() {
+>   if (xhr.readyState === 4 && xhr.status === 200) {
+>     const data = JSON.parse(xhr.responseText);
+>     console.log(data);
+>   }
+> };
+> xhr.send();
+> ```
+>
+> **`axios`**：基于 Promise，支持 `async/await` 语法，使用简洁，直接返回处理后的响应数据。
+>
+> ```js
+> // 示例：GET 请求
+> axios.get('https://api.example.com/data', { params: { id: 1 } })
+>   .then(res => console.log(res.data)) // 直接获取 data 字段
+>   .catch(err => console.error(err));
+> 
+> // 支持 async/await
+> async function fetchData() {
+>   try {
+>     const res = await axios.get('https://api.example.com/data');
+>     console.log(res.data);
+>   } catch (err) {
+>     console.error(err);
+>   }
+> }
+> ```
+>
+> **`fetch`**：原生 Promise API，语法比 XHR 简洁，但需要手动处理响应解析和错误。
+>
+> ```js
+> fetch('https://api.example.com/data')
+>   .then(res => {
+>     if (!res.ok) throw new Error(`HTTP error: ${res.status}`); // 需手动判断 HTTP 状态
+>     return res.json(); // 需手动解析 JSON（还支持 text()、blob() 等）
+>   })
+>   .then(data => console.log(data))
+>   .catch(err => console.error(err));
+> ```
+>
+> | 特性                | AJAX（XHR）                     | axios                              | fetch（原生）                                |
+> | ------------------- | ------------------------------- | ---------------------------------- | -------------------------------------------- |
+> | **本质**            | 技术思想（基于 XHR 对象）       | 第三方库（封装 XHR）               | 浏览器原生 API                               |
+> | **Promise 支持**    | 不支持（需手动封装）            | 支持（核心特性）                   | 支持（基于 Promise）                         |
+> | **语法简洁性**      | 繁琐（需处理大量回调）          | 简洁（支持链式调用 /async）        | 较简洁（但需手动处理细节）                   |
+> | **响应处理**        | 需手动解析 `responseText`       | 自动解析 JSON（res.data）          | 需手动调用 `res.json()` 等                   |
+> | **错误处理**        | 需判断 `status` 和 `readyState` | 自动捕获 HTTP 错误（4xx/5xx）      | 仅捕获网络错误，HTTP 错误需手动判断 `res.ok` |
+> | **请求拦截 / 取消** | 需手动实现                      | 内置支持                           | 需通过 `AbortController` 实现                |
+> | **超时设置**        | 需手动实现                      | 内置 `timeout` 配置                | 需结合 `Promise.race()` 实现                 |
+> | **JSON 自动转换**   | 不支持                          | 自动转换（请求 / 响应）            | 需手动 `JSON.stringify()`/`res.json()`       |
+> | **浏览器兼容性**    | 所有浏览器（包括 IE6+）         | 依赖 ES6 Promise（IE 需 polyfill） | 现代浏览器（IE 完全不支持）                  |
+> | **Node.js 支持**    | 不支持                          | 支持（通过 http 模块）             | 不支持（浏览器原生 API）                     |
+
+3.**适用场景不同**
+
+> **`ajax`**：仅在需要原生底层控制，或兼容极旧浏览器（如 IE6）时使用，实际开发中很少直接使用。
+>
+> **`axios`**：最推荐的方案，功能完善（拦截、取消、超时等），语法简洁，兼容性好（通过 polyfill 支持旧浏览器），适用于大多数前端项目。
+>
+> **`fetch`**：现代项目中可替代 XHR，适合对原生 API 有偏好，且不需要兼容旧浏览器的场景（如移动端 H5、Electron 应用），但需手动处理边缘情况（如错误、超时）。
+
+### 15.forEach和map的区别
+
+1.`forEach` 和 `map` 是 JavaScript 常用的**遍历数组**的方法，两者**都不会直接修改原数组**（除非在回调函数中主动修改原数组元素，如引用类型的属性）。
+
+> ```js
+> // 基本类型元素：原数组不变
+> const arr1 = [1, 2, 3];
+> arr1.forEach(item => item = item * 2); // 无效（基本类型是值传递）
+> console.log(arr1); // [1, 2, 3]
+> 
+> // 引用类型元素：可修改内部属性（但不推荐，应保持数据不可变）
+> const arr2 = [{ a: 1 }, { a: 2 }];
+> arr2.map(item => item.a = item.a * 2); 
+> console.log(arr2); // [{a:2}, {a:4}]（原数组元素被修改）
+> ```
+
+2.**返回值不同**
+
+> **`forEach`**：**没有返回值**（返回 `undefined`）。它的作用是 “执行操作”，仅用于遍历数组并对元素进行处理（如打印、修改外部变量等），不会生成新数组。
+>
+> ```js
+> const arr = [1, 2, 3];
+> const result = arr.forEach(item => item * 2);
+> console.log(result); // undefined（无返回值）
+> ```
+>
+> **`map`**：返回一个**新数组**，新数组的元素是原数组元素经过回调函数处理后的结果。它的作用是 “映射转换”，通过对原数组每个元素加工，生成一个新的数组，不改变原数组。
+>
+> ```js
+> const arr = [1, 2, 3];
+> const result = arr.map(item => item * 2);
+> console.log(result); // [2, 4, 6]（返回新数组）
+> console.log(arr); // [1, 2, 3]（原数组不变）
+> ```
+
+### 16.说一说尾调用
+
+1.**什么是尾调用**
+
+> 尾调用（Tail Call）是函数式编程中的一个概念，指的是**一个函数的最后一个操作是调用另一个函数，且该调用的结果直接作为其他运算的一部分，直接被返回**。
+>
+> ```js
+> // 尾调用
+> function A(x) {
+>   return B(x); // 最后一步是调用 B，且直接返回 B 的结果
+> }
+> 
+> // 非尾调用：调用后有其他运算
+> function A(x) {
+>   return B(x) + 1; // 调用 B 后还要做 +1 运算，不是尾调用
+> }
+> 
+> // 非尾调用：调用后没有直接返回
+> function A(x) {
+>   const res = B(x);
+>   return res; // 虽然最终返回 res，但调用 B 不是最后一步（最后一步是 return res）
+> }
+> ```
+
+2.**尾调用的优点**
+
+> 尾调用的重要意义在于**可以被引擎优化**，减少内存消耗。普通函数调用时，引擎会创建一个 “调用栈帧”（保存函数的参数、局部变量、返回地址等），并压入调用栈。若函数 `A` 尾调用函数 `B`，由于 `A` 后续无任何操作，其栈帧可以被释放，直接复用栈空间给 `B`，避免调用栈过深导致的 “栈溢出”（`Stack Overflow`）。
+>
+> ```js
+> // 尾递归:递归函数若采用尾调用形式，理论上可以无限递归而不溢出（需引擎支持 TCO）
+> function factorial(n, total = 1) {
+>   if (n === 1) return total;
+>   return factorial(n - 1, n * total); // 尾调用自身，可被优化
+> }
+> ```
+
+### 17.如何实现浅拷贝
+
+1.**什么是浅拷贝**
+
+> 浅拷贝（Shallow Copy）是指创建一个新对象，**复制原对象的表层属性**，但如果原对象的属性值是引用类型（如对象、数组等），新对象只会复制该引用的地址（即新对象和原对象的引用类型属性指向指向同一个内存地址）。
+
+2.**方式1：手动遍历赋值**
+
+> 通过遍历原对象的属性，逐一复制到新对象中。
+>
+> ```js
+> function shallowCopy(obj) {
+>   // 只处理对象/数组，非引用类型直接返回
+>   if (typeof obj !== 'object' || obj === null) {
+>     return obj;
+>   }
+> 
+>   // 根据原对象类型初始化新对象（数组/普通对象）
+>   const newObj = Array.isArray(obj) ? [] : {};
+> 
+>   // 遍历原对象的可枚举属性，复制到新对象
+>   for (let key in obj) {
+>     // 只复制自身属性（不包含继承的属性）
+>     if (obj.hasOwnProperty(key)) {
+>       newObj[key] = obj[key];
+>     }
+>   }
+> 
+>   return newObj;
+> }
+> 
+> // 测试
+> const obj = { a: 1, b: { c: 2 }, arr: [3, 4] };
+> const copy = shallowCopy(obj);
+> 
+> console.log(copy); // { a: 1, b: { c: 2 }, arr: [3, 4] }
+> console.log(copy.b === obj.b); // true（引用类型属性共享内存）
+> console.log(copy.arr === obj.arr); // true（数组也是引用类型）
+> ```
+
+3.**方式2：Object.assign () 方法**
+
+> `Object.assign(target, ...sources)` 用于将源对象的可枚举属性复制到目标对象，返回目标对象，**适用于普通对象**。
+>
+> ```js
+> const obj = { a: 1, b: { c: 2 } };
+> const copy = Object.assign({}, obj); // 目标对象为新空对象，源对象为 obj
+> 
+> console.log(copy); // { a: 1, b: { c: 2 } }
+> console.log(copy.b === obj.b); // true（引用类型未深拷贝）
+> ```
+
+4.**方式3： 解构赋值**
+
+> 适用于对象和数组，通过解构语法快速复制表层属性。
+>
+> ```js
+> // 对象解构
+> const obj = { a: 1, b: { c: 2 } };
+> const copyObj = { ...obj };
+> console.log(copyObj.b === obj.b); // true
+> 
+> // 数组解构（同扩展运算符）
+> const arr = [1, 2, { 3: 4 }];
+> const copyArr = [...arr];
+> console.log(copyArr[2] === arr[2]); // true
+> ```
+
+### 18.如何实现深拷贝
+
+1.**什么是深拷贝**
+
+> 深拷贝（Deep Copy）是指创建一个新对象，**完全复制原对象的所有层级别属性**，包括嵌套的引用类型（如对象、数组等），新对象与原对象完全独立，修改新对象的任何属性都不会影响原对象。
+
+2.**方式1：JSON 序列化**
+
+> 利用 `JSON.stringify()` 将对象转为 JSON 字符串，再用 `JSON.parse()` 解析为新对象，实现深拷贝。
+>
+> **局限性**：1.不支持 `Function`、`RegExp`、`Date`、`Map`、`Set` 等特殊类型，会被转换为无效值（如函数会被忽略，`Date` 会转为字符串后无法还原为 `Date` 对象）。2.不支持循环引用（如 `obj.self = obj`），会报错。3.不支持 `Symbol` 类型和不可枚举属性。
+>
+> **适用场景**：仅拷贝纯 JSON 数据（如 `number`、`string`、普通对象、数组等），无特殊类型和循环引用。
+>
+> ```js
+> function deepCopyJSON(obj) {
+>   return JSON.parse(JSON.stringify(obj));
+> }
+> 
+> // 测试
+> const obj = { a: 1, b: { c: 2 }, arr: [3, 4] };
+> const copy = deepCopyJSON(obj);
+> 
+> console.log(copy); // { a: 1, b: { c: 2 }, arr: [3, 4] }
+> console.log(copy.b === obj.b); // false（嵌套对象已独立）
+> console.log(copy.arr === obj.arr); // false（嵌套数组已独立）
+> ```
+
+3.**方式2：递归实现**（基础版，支持多数场景）
+
+> 通过递归遍历对象的所有属性，对基本类型直接复制，对引用类型则创建新对象并递归拷贝其属性。
+>
+> **改进点**：1.支持 `Date`、`RegExp` 等特殊类型。2.支持 `Symbol` 属性（通过 `Reflect.ownKeys` 遍历）。
+>
+> **局限性**：1.不支持循环引用（如 `obj.self = obj` 会导致递归无限循环，栈溢出）。2.不支持 `Map`、`Set` 等复杂类型（需额外处理）。
+>
+> ```js
+> function deepCopyBasic(obj) {
+>   // 处理 null 和非对象类型（基本类型直接返回）
+>   if (obj === null || typeof obj !== 'object') {
+>     return obj;
+>   }
+> 
+>   // 处理日期对象
+>   if (obj instanceof Date) {
+>     return new Date(obj);
+>   }
+> 
+>   // 处理正则对象
+>   if (obj instanceof RegExp) {
+>     return new RegExp(obj.source, obj.flags);
+>   }
+> 
+>   // 初始化新对象（数组/普通对象）
+>   const newObj = Array.isArray(obj) ? [] : {};
+> 
+>   // 遍历所有自有属性（包括 Symbol 类型）
+>   Reflect.ownKeys(obj).forEach(key => {
+>     // 递归拷贝属性值
+>     newObj[key] = deepCopyBasic(obj[key]);
+>   });
+> 
+>   return newObj;
+> }
+> 
+> // 测试
+> const obj = {
+>   a: 1,
+>   b: { c: 2 },
+>   arr: [3, 4],
+>   date: new Date(),
+>   reg: /abc/g
+> };
+> const copy = deepCopyBasic(obj);
+> 
+> console.log(copy.b === obj.b); // false
+> console.log(copy.date instanceof Date); // true（日期类型保留）
+> console.log(copy.reg instanceof RegExp); // true（正则类型保留）
+> ```
+
+4.**方式3： 递归 + 缓存**（解决循环引用）
+
+> 通过 `WeakMap` 缓存已拷贝的对象，避免循环引用导致的无限递归。
+>
+> **优势**：1.支持循环引用（通过 `WeakMap` 缓存）。2.支持 `Date`、`RegExp`、`Map`、`Set` 等特殊类型。3.支持 `Symbol` 属性和不可枚举属性。
+>
+> ```js
+> function deepCopy(obj, cache = new WeakMap()) {
+>   // 处理 null 和非对象类型
+>   if (obj === null || typeof obj !== 'object') {
+>     return obj;
+>   }
+> 
+>   // 若已拷贝过该对象，直接返回缓存的新对象（解决循环引用）
+>   if (cache.has(obj)) {
+>     return cache.get(obj);
+>   }
+> 
+>   let newObj;
+> 
+>   // 处理 Date
+>   if (obj instanceof Date) {
+>     newObj = new Date(obj);
+>     cache.set(obj, newObj);
+>     return newObj;
+>   }
+> 
+>   // 处理 RegExp
+>   if (obj instanceof RegExp) {
+>     newObj = new RegExp(obj.source, obj.flags);
+>     cache.set(obj, newObj);
+>     return newObj;
+>   }
+> 
+>   // 处理 Map
+>   if (obj instanceof Map) {
+>     newObj = new Map();
+>     cache.set(obj, newObj);
+>     obj.forEach((value, key) => {
+>       newObj.set(key, deepCopy(value, cache)); // 递归拷贝值
+>     });
+>     return newObj;
+>   }
+> 
+>   // 处理 Set
+>   if (obj instanceof Set) {
+>     newObj = new Set();
+>     cache.set(obj, newObj);
+>     obj.forEach(value => {
+>       newObj.add(deepCopy(value, cache)); // 递归拷贝值
+>     });
+>     return newObj;
+>   }
+> 
+>   // 处理数组和普通对象
+>   newObj = Array.isArray(obj) ? [] : {};
+>   cache.set(obj, newObj); // 缓存新对象，避免循环引用
+> 
+>   // 遍历所有自有属性（包括 Symbol）
+>   Reflect.ownKeys(obj).forEach(key => {
+>     newObj[key] = deepCopy(obj[key], cache); // 递归拷贝属性
+>   });
+> 
+>   return newObj;
+> }
+> 
+> // 测试循环引用
+> const obj = { name: 'test' };
+> obj.self = obj; // 循环引用：obj 引用自身
+> 
+> const copy = deepCopy(obj);
+> console.log(copy.self === copy); // true（拷贝后，self 指向新对象自身，无循环递归）
+> ```
+
+5**.方式4：第三方库**（生产环境推荐）
+
+> 实际开发中，手动实现的深拷贝可能存在边缘场景遗漏，推荐使用成熟库**Lodash 的 `_.cloneDeep()`**：功能完善，支持各种类型和边缘情况，是行业标准。
+>
+> ```js
+> import _ from 'lodash';
+> 
+> const obj = { a: 1, b: { c: 2 }, self: null };
+> obj.self = obj; // 循环引用
+> 
+> const copy = _.cloneDeep(obj);
+> console.log(copy.b === obj.b); // false
+> console.log(copy.self === copy); // true
+> ```
+
+### 19.let、const、var的区别
