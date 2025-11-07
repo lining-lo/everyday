@@ -292,3 +292,64 @@ console.log(p1 instanceof Person); // true
 console.log(p2 instanceof Person); // true（验证原型关系正确）
 ```
 
+### 实现call
+
+要实现 `call` 方法，需理解其核心功能：**改变函数执行时的 `this` 指向，并立即调用函数**，同时支持传入参数列表。以下是具体实现及原理分析：
+
+`call` 方法的核心逻辑
+
+1. **绑定 `this` 指向**：将函数临时挂载到目标对象上，通过对象调用函数的方式，让函数内的 `this` 指向该对象。
+2. **处理参数**：接收除第一个参数（`this` 指向的对象）外的其他参数，作为函数的实参。
+3. **兼容特殊情况**：若第一个参数为 `null/undefined`，`this` 指向全局对象（浏览器为 `window`，Node 为 `globalThis`）；若为基本类型（如 `number`、`string`），需转为对应包装对象。
+4. **避免污染原对象**：使用临时属性挂载函数，调用后删除该属性。
+
+```js
+Function.prototype.myCall = function (thisArg, ...args) {
+  // 1. 处理 thisArg 为 null/undefined 的情况，指向全局对象
+  if (thisArg === null || thisArg === undefined) {
+    thisArg = globalThis; // 浏览器环境是 window，Node 环境是 global
+  } else {
+    // 2. 基本类型转为对象（因为函数需要挂载到对象上）
+    thisArg = Object(thisArg);
+  }
+
+  // 3. 创建唯一临时属性，避免覆盖原对象的属性（用 Symbol 确保唯一性）
+  const tempFnKey = Symbol('tempFn');
+
+  // 4. 将当前函数（this 指向调用 myCall 的函数）挂载到 thisArg 上
+  thisArg[tempFnKey] = this;
+
+  // 5. 调用函数，传入参数，此时函数内的 this 指向 thisArg
+  const result = thisArg[tempFnKey](...args);
+
+  // 6. 删除临时属性，避免污染原对象
+  delete thisArg[tempFnKey];
+
+  // 7. 返回函数执行结果
+  return result;
+};
+```
+
+测试实例：
+
+```js
+// 测试普通对象
+const obj = { name: 'Alice' };
+function sayHello(age) {
+  console.log(`Hello, ${this.name}, age: ${age}`);
+  return 'success';
+}
+sayHello.myCall(obj, 20); // 输出：Hello, Alice, age: 20 → 返回 'success'
+
+// 测试 thisArg 为 null
+sayHello.myCall(null, 30); // 输出：Hello, undefined, age: 30（非严格模式下 this 指向全局）
+
+// 测试基本类型（如 number）
+const num = 123;
+function getThisType() {
+  console.log(this.constructor); // 包装对象 Number
+}
+getThisType.myCall(num); // 输出：[Function: Number]
+```
+
+### 实现instanceof

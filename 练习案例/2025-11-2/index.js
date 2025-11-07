@@ -264,15 +264,5 @@
 // })
 
 
-// Array.isArray([])
-// Object.prototype.toString.call() 调用Object原型链上的toString方法 返回【Object Array】字符串
-// console.log(Object.prototype.toString.call([]) === '[object Array]');
-// instanceof 判断一个对象是否为某个实例的构造函数
-console.log([] instanceof Array);
-
-
-
-
-
 
 
