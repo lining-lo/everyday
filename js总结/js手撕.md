@@ -353,3 +353,43 @@ getThisType.myCall(num); // 输出：[Function: Number]
 ```
 
 ### 实现instanceof
+
+### 实现reduce
+
+```js
+/**
+ * 手写实现数组 reduce 方法
+ * @param {Function} callback 累积回调函数，接收4个参数：acc(累积值)、curr(当前元素)、idx(当前索引)、arr(原数组)
+ * @param {*} [initialValue] 可选初始值，无则取数组第一个元素
+ * @returns {*} 最终累积结果
+ */
+Array.prototype.myReduce = function(callback, initialValue) {
+    // 1. 校验回调函数类型
+    if (typeof callback !== 'function') {
+        throw new TypeError('The first argument must be a function');
+    }
+
+    // 2. 取原数组（this 指向调用 myReduce 的数组）
+    const arr = this;
+    const len = arr.length;
+
+    // 3. 处理数组为空且无初始值的边界情况
+    if (len === 0 && initialValue === undefined) {
+        throw new TypeError('Reduce of empty array with no initial value');
+    }
+
+    // 4. 确定初始累积值和起始迭代索引
+    let accumulator = initialValue !== undefined ? initialValue : arr[0];
+    let startIndex = initialValue !== undefined ? 0 : 1;
+
+    // 5. 迭代数组，执行累积计算
+    for (let i = startIndex; i < len; i++) {
+        // 回调函数的返回值作为下一轮的累积值
+        accumulator = callback(accumulator, arr[i], i, arr);
+    }
+
+    // 6. 返回最终累积结果
+    return accumulator;
+};
+```
+
