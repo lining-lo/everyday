@@ -393,3 +393,88 @@ Array.prototype.myReduce = function(callback, initialValue) {
 };
 ```
 
+### 函数柯里化
+
+函数柯里化是一种函数式编程技术，它将一个接收多个参数的函数，转换成一系列只接收单个参数的函数。
+
+举个例子：
+
+一个接收三个参数的普通函数：
+
+```js
+function add(a, b, c) {
+  return a + b + c;
+}
+add(1, 2, 3); // 6
+```
+
+经过柯里化后，它会变成这样：
+
+```js
+function curriedAdd(a) {
+  return function(b) {
+    return function(c) {
+      return a + b + c;
+    };
+  };
+}
+
+curriedAdd(1)(2)(3); // 6
+```
+
+实现思路:
+
+1. 创建一个 `curry` 函数，它接收一个目标函数 `fn` 作为参数。
+2. `curry` 函数返回一个新的 `curried` 函数，这个函数用于接收参数。
+3. 在 `curried` 函数内部：
+   - 收集所有传入的参数。
+   - 判断收集到的参数数量是否已经等于或超过了目标函数 `fn` 所需的参数数量（`fn.length`）。
+   - 如果**足够**，就调用 `fn` 并传入所有收集到的参数，返回结果。
+   - 如果**不足**，就返回一个新的函数，这个新函数会继续收集后续传入的参数，并重复上述判断逻辑。
+
+```js
+/**
+ * 将一个函数柯里化
+ * @param {Function} fn 需要被柯里化的函数
+ * @returns {Function} 柯里化后的函数
+ */
+function curry(fn) {
+  // 返回一个柯里化后的函数
+  return function curried(...args) {
+    // 判断当前收集的参数数量是否足够
+    if (args.length >= fn.length) {
+      // 如果足够，直接调用原函数并返回结果
+      // fn.call(this, ...args) 确保原函数的 this 指向正确
+      return fn.apply(this, args);
+    } else {
+      // 如果不足，返回一个新函数，继续收集参数
+      return function(...nextArgs) {
+        // 将新收集的参数与之前的合并，并递归调用 curried
+        return curried.apply(this, args.concat(nextArgs));
+      };
+    }
+  };
+}
+
+// --- 使用示例 ---
+
+// 1. 定义一个需要多个参数的函数
+function add(a, b, c) {
+  return a + b + c;
+}
+
+// 2. 对其进行柯里化
+const curriedAdd = curry(add);
+
+// 3. 调用柯里化后的函数
+console.log(curriedAdd(1, 2, 3)); // 输出: 6 (一次性传入所有参数)
+console.log(curriedAdd(1)(2, 3)); // 输出: 6 (分两次传入)
+console.log(curriedAdd(1)(2)(3)); // 输出: 6 (分三次传入)
+
+// 4. 参数复用
+const add10 = curriedAdd(10); // 固定第一个参数为 10
+console.log(add10(5, 6));     // 输出: 21 (10 + 5 + 6)
+const add10And5 = add10(5);   // 再固定第二个参数为 5
+console.log(add10And5(7));    // 输出: 22 (10 + 5 + 7)
+```
+
