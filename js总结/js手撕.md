@@ -478,3 +478,49 @@ const add10And5 = add10(5);   // 再固定第二个参数为 5
 console.log(add10And5(7));    // 输出: 22 (10 + 5 + 7)
 ```
 
+### 实现bind
+
+要在 JavaScript 中手动实现 `bind` 方法，需要理解其核心功能：**绑定函数的上下文（this），并支持预传参数，返回一个新函数**。
+
+`bind` 方法的核心特性：
+
+1. 绑定 `this` 上下文，使函数执行时 `this` 固定为指定值。
+2. 支持「柯里化传参」：绑定函数时可以预先传入部分参数，调用时再传入剩余参数。
+3. 返回的新函数可以被当作构造函数使用（此时绑定的 `this` 会被忽略，以实例为 `this`）。
+4. 继承原函数的原型链（当绑定函数作为构造函数时，实例能访问原函数原型上的属性）。
+
+```js
+Function.prototype.myBind = function (context) {
+    // 1. 确保调用者是函数
+    if (typeof this !== 'function') {
+        throw new TypeError('The bound object must be a function');
+    }
+
+    // 2. 保存原函数（this 指向调用 myBind 的函数）
+    const self = this;
+
+    // 3. 提取绑定阶段的参数（排除第一个参数 context）
+    const bindArgs = Array.prototype.slice.call(arguments, 1);
+
+    // 4. 定义一个中间函数，用于隔离原型链（避免修改绑定函数的 prototype 影响原函数）
+    const F = function () {};
+
+    // 5. 定义绑定后的函数
+    const bound = function () {
+        // 收集调用阶段的参数
+        const callArgs = Array.prototype.slice.call(arguments);
+        // 合并绑定参数和调用参数
+        const args = bindArgs.concat(callArgs);
+        // 若当前函数作为构造函数调用（this 是 F 的实例），则 this 指向实例；否则指向绑定的 context
+        return self.apply(this instanceof F ? this : context, args);
+    };
+
+    // 6. 继承原函数的原型（确保构造函数调用时，实例能访问原函数原型上的属性）
+    F.prototype = self.prototype;
+    bound.prototype = new F();
+
+    // 7. 返回绑定后的函数
+    return bound;
+};
+```
+
