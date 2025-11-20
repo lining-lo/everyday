@@ -48,39 +48,39 @@
 /**
  * 翻转字符串的单词
  */
-function reverseWords(str) {
-    // 处理字符串
-    const proceeStr = str.trim().replace(/\s+/g, ' ')
-    // 变成数组
-    const resultArr = proceeStr.split('')
-    // 定义一个反转工具
-    function reverseStr(arr, left, right) {
-        while (left < right) {
-            [arr[left], arr[right]] = [arr[right], arr[left]]
-            left++
-            right--
-        }
-    }
-    // 全部反转
-    let n = resultArr.length
-    reverseStr(resultArr, 0, n - 1)
+// function reverseWords(str) {
+//     // 处理字符串
+//     const proceeStr = str.trim().replace(/\s+/g, ' ')
+//     // 变成数组
+//     const resultArr = proceeStr.split('')
+//     // 定义一个反转工具
+//     function reverseStr(arr, left, right) {
+//         while (left < right) {
+//             [arr[left], arr[right]] = [arr[right], arr[left]]
+//             left++
+//             right--
+//         }
+//     }
+//     // 全部反转
+//     let n = resultArr.length
+//     reverseStr(resultArr, 0, n - 1)
 
-    let start = 0
-    // 单词反转
-    for (let i = 0; i < n; i++) {
-        if (resultArr[i] === ' ' || i === n - 1) {
-            let end = resultArr[i] === ' ' ? i - 1 : i
-            reverseStr(resultArr, start,end)
-            start = i + 1
-        }
+//     let start = 0
+//     // 单词反转
+//     for (let i = 0; i < n; i++) {
+//         if (resultArr[i] === ' ' || i === n - 1) {
+//             let end = resultArr[i] === ' ' ? i - 1 : i
+//             reverseStr(resultArr, start,end)
+//             start = i + 1
+//         }
       
-    }
+//     }
 
-    // 数组转成字符串
-    return resultArr.join('')
-}
+//     // 数组转成字符串
+//     return resultArr.join('')
+// }
 
-// 测试示例
-console.log(reverseWords("the sky is blue")); // "blue is sky the"
-console.log(reverseWords("  hello world!  ")); // "world! hello"
-console.log(reverseWords("a good  example")); // "example good a"
+// // 测试示例
+// console.log(reverseWords("the sky is blue")); // "blue is sky the"
+// console.log(reverseWords("  hello world!  ")); // "world! hello"
+// console.log(reverseWords("a good  example")); // "example good a"

@@ -524,3 +524,67 @@ Function.prototype.myBind = function (context) {
 };
 ```
 
+### 实现Promise.all
+
+```js
+/**
+ * 手写实现 Promise.all
+ * @param {Iterable<Promise>} iterable - 可迭代对象，包含多个 Promise
+ * @return {Promise} - 返回一个新的 Promise
+ */
+Promise.myAll = function (iterable) {
+  // 将可迭代对象转换为数组，方便后续操作
+  const promises = Array.from(iterable);
+  const result = [];
+  let resolvedCount = 0;
+
+  // 返回一个新的 Promise
+  return new Promise((resolve, reject) => {
+    promises.forEach((promise, index) => {
+      // 确保每个元素都是 Promise，如果不是则转换为 Promise
+      Promise.resolve(promise)
+        .then((value) => {
+          // 存储当前 Promise 的结果
+          result[index] = value;
+          resolvedCount++;
+
+          // 如果所有 Promise 都已成功解决，解决最终的 Promise
+          if (resolvedCount === promises.length) {
+            resolve(result);
+          }
+        })
+        .catch((error) => {
+          // 如果有任何一个 Promise 失败，立即拒绝最终的 Promise
+          reject(error);
+        });
+    });
+  });
+};
+
+// 示例 1：所有 Promise 都成功
+const promise1 = Promise.resolve(1);
+const promise2 = Promise.resolve(2);
+const promise3 = Promise.resolve(3);
+
+Promise.myAll([promise1, promise2, promise3])
+  .then((values) => {
+    console.log(values); // 输出: [1, 2, 3]
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
+// 示例 2：有一个 Promise 失败
+const promise4 = Promise.resolve(4);
+const promise5 = Promise.reject(new Error('Failed'));
+const promise6 = Promise.resolve(6);
+
+Promise.myAll([promise4, promise5, promise6])
+  .then((values) => {
+    console.log(values);
+  })
+  .catch((error) => {
+    console.error(error.message); // 输出: Failed
+  });
+```
+
